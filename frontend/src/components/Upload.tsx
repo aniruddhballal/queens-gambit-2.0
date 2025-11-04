@@ -1,6 +1,7 @@
 import { makeGambit } from '../utils/make_gambit'
 import { undoGambit } from '../utils/undo_gambit'
 import { useState } from 'react';
+import LoadingState from './LoadingState';
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -9,6 +10,7 @@ export default function UploadPage() {
   const [resultData, setResultData] = useState<string | ArrayBuffer | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [mode, setMode] = useState<'encode' | 'decode'>('encode');
+  const [imageLoaded, setImageLoaded] = useState<boolean>(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const selectedFile: File | undefined = e.target.files?.[0];
@@ -62,13 +64,25 @@ export default function UploadPage() {
     }
   };
 
+  // Preload background image
+  const backgroundUrl = 'https://media.istockphoto.com/id/1280096529/photo/close-up-of-chessmen-on-chessboard.jpg?s=612x612&w=0&k=20&c=SWP4H8luD-Wrgz-FThOVp00-zOtGOwaNs6GTwZU-QoI=';
+  
+  if (typeof window !== 'undefined' && !imageLoaded) {
+    const img = new Image();
+    img.onload = () => setImageLoaded(true);
+    img.src = backgroundUrl;
+  }
+
+  if (!imageLoaded) {
+    return <LoadingState />;
+  }
+
   return (
     <div className="relative w-full h-screen overflow-hidden">
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage:
-            'url(https://media.istockphoto.com/id/1280096529/photo/close-up-of-chessmen-on-chessboard.jpg?s=612x612&w=0&k=20&c=SWP4H8luD-Wrgz-FThOVp00-zOtGOwaNs6GTwZU-QoI=)',
+          backgroundImage: `url(${backgroundUrl})`,
         }}
       />
       <div className="relative z-10 flex flex-col items-center justify-center h-full px-4">
