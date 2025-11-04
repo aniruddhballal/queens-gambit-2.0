@@ -1,18 +1,20 @@
 import { makeGambit } from '../utils/make_gambit'
+import { undoGambit } from '../utils/undo_gambit'
 import { useState } from 'react';
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
-  const [pgnData, setPgnData] = useState<string | null>(null);
+  const [resultData, setResultData] = useState<string | ArrayBuffer | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [mode, setMode] = useState<'encode' | 'decode'>('encode');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const selectedFile: File | undefined = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
-      setPgnData(null);
+      setResultData(null);
       if (downloadUrl) {
         URL.revokeObjectURL(downloadUrl);
         setDownloadUrl(null);
@@ -28,15 +30,28 @@ export default function UploadPage() {
 
     try {
       const arrayBuffer: ArrayBuffer = await file.arrayBuffer();
-      const pgnResult: string = await makeGambit(arrayBuffer, (prog: number) => {
-        setProgress(prog);
-      });
       
-      setPgnData(pgnResult);
-      
-      const blob: Blob = new Blob([pgnResult], { type: 'text/plain' });
-      const url: string = URL.createObjectURL(blob);
-      setDownloadUrl(url);
+      if (mode === 'encode') {
+        const result: string = await makeGambit(arrayBuffer, (prog: number) => {
+          setProgress(prog);
+        });
+        
+        setResultData(result);
+        
+        const blob: Blob = new Blob([result], { type: 'text/plain' });
+        const url: string = URL.createObjectURL(blob);
+        setDownloadUrl(url);
+      } else {
+        const result: ArrayBuffer = await undoGambit(arrayBuffer, (prog: number) => {
+          setProgress(prog);
+        });
+        
+        setResultData(result);
+        
+        const blob: Blob = new Blob([result]);
+        const url: string = URL.createObjectURL(blob);
+        setDownloadUrl(url);
+      }
       
       setProgress(100);
     } catch (error) {
@@ -59,8 +74,17 @@ export default function UploadPage() {
       <div className="relative z-10 flex flex-col items-center justify-center h-full px-4">
         <h1 className="text-4xl font-bold mb-8 text-white drop-shadow-lg">Chess Gambit Encoder</h1>
         
-        {!pgnData ? (
+        {!resultData ? (
           <>
+            <div className="mb-4">
+              <button
+                onClick={() => setMode(mode === 'encode' ? 'decode' : 'encode')}
+                className="text-sm text-white/70 hover:text-white underline transition-colors"
+              >
+                Switch to {mode === 'encode' ? 'Decode' : 'Encode'} Mode
+              </button>
+            </div>
+
             <label 
               htmlFor="file-upload" 
               className="cursor-pointer mb-6 px-8 py-12 border-2 border-dashed border-white/40 rounded-lg bg-black/60 backdrop-blur-sm hover:bg-black/80 hover:border-white/70 transition-all duration-300 hover:scale-105"
@@ -72,7 +96,11 @@ export default function UploadPage() {
                 <span className="text-lg font-semibold mb-1">
                   {file ? file.name : 'Click to upload'}
                 </span>
-                <span className="text-sm text-white/70">Select a file to encode into chess games</span>
+                <span className="text-sm text-white/70">
+                  {mode === 'encode' 
+                    ? 'Select a file to encode into chess games'
+                    : 'Select a PGN file to decode'}
+                </span>
               </div>
             </label>
             <input 
@@ -87,7 +115,9 @@ export default function UploadPage() {
               disabled={!file || processing}
               className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              {processing ? 'Encoding...' : 'Encode to PGN'}
+              {processing 
+                ? (mode === 'encode' ? 'Encoding...' : 'Decoding...') 
+                : (mode === 'encode' ? 'Encode to PGN' : 'Decode from PGN')}
             </button>
 
             {processing && (
@@ -105,22 +135,30 @@ export default function UploadPage() {
         ) : (
           <div className="flex flex-col items-center">
             <div className="mb-6 px-8 py-6 bg-black/60 backdrop-blur-sm rounded-lg border border-white/40">
-              <p className="text-white text-center mb-2">✓ Encoding complete!</p>
-              <p className="text-white/70 text-sm text-center">Your file has been encoded into chess games</p>
+              <p className="text-white text-center mb-2">
+                ✓ {mode === 'encode' ? 'Encoding' : 'Decoding'} complete!
+              </p>
+              <p className="text-white/70 text-sm text-center">
+                {mode === 'encode' 
+                  ? 'Your file has been encoded into chess games'
+                  : 'Your file has been decoded from chess games'}
+              </p>
             </div>
             
             <a
               href={downloadUrl || undefined}
-              download={`${file?.name || 'encoded'}.pgn`}
+              download={mode === 'encode' 
+                ? `${file?.name || 'encoded'}.pgn`
+                : `${file?.name.replace('.pgn', '') || 'decoded'}`}
               className="px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 hover:shadow-lg hover:shadow-green-500/50 transition-all duration-300 hover:scale-105 active:scale-95 mb-4"
             >
-              Download PGN File
+              Download {mode === 'encode' ? 'PGN' : 'Decoded'} File
             </a>
 
             <button
               onClick={() => {
                 setFile(null);
-                setPgnData(null);
+                setResultData(null);
                 if (downloadUrl) {
                   URL.revokeObjectURL(downloadUrl);
                   setDownloadUrl(null);
@@ -129,7 +167,7 @@ export default function UploadPage() {
               }}
               className="px-6 py-2 bg-white/20 text-white rounded-lg font-semibold hover:bg-white/30 transition-all duration-300"
             >
-              Encode Another File
+              {mode === 'encode' ? 'Encode' : 'Decode'} Another File
             </button>
           </div>
         )}
