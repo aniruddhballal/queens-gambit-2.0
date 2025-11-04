@@ -1,7 +1,7 @@
-import QueensGambitUpload from "./components/QueensGambitUpload"
+import UploadPage from "./components/Upload"
 
 function App() {
-  return <QueensGambitUpload />
+  return <UploadPage />
 }
 
 export default App
