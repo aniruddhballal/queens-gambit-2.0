@@ -88,17 +88,26 @@ export default function UploadPage() {
       <div className="relative z-10 flex flex-col items-center justify-center h-full px-4">
         <h1 className="text-4xl font-bold mb-8 text-white drop-shadow-lg">Chess Gambit Encoder</h1>
         
+        <div className="mb-4">
+          <button
+            onClick={() => {
+              setMode(mode === 'encode' ? 'decode' : 'encode');
+              setFile(null);
+              setResultData(null);
+              if (downloadUrl) {
+                URL.revokeObjectURL(downloadUrl);
+                setDownloadUrl(null);
+              }
+              setProgress(0);
+            }}
+            className="text-sm text-white/70 hover:text-white underline transition-colors"
+          >
+            Switch to {mode === 'encode' ? 'Decode' : 'Encode'} Mode
+          </button>
+        </div>
+        
         {!resultData ? (
           <>
-            <div className="mb-4">
-              <button
-                onClick={() => setMode(mode === 'encode' ? 'decode' : 'encode')}
-                className="text-sm text-white/70 hover:text-white underline transition-colors"
-              >
-                Switch to {mode === 'encode' ? 'Decode' : 'Encode'} Mode
-              </button>
-            </div>
-
             <label 
               htmlFor="file-upload" 
               className="cursor-pointer mb-6 px-8 py-12 border-2 border-dashed border-white/40 rounded-lg bg-black/60 backdrop-blur-sm hover:bg-black/80 hover:border-white/70 transition-all duration-300 hover:scale-105"
