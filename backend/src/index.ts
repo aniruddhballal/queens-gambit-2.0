@@ -34,7 +34,7 @@ app.use(cors({
 }));
 
 // Routes
-app.use('/api/conversions', conversionRoutes);
+app.use('/conversions', conversionRoutes);
 
 // Health check route
 app.get('/', (req: Request, res: Response) => {
