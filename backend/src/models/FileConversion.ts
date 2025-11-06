@@ -5,6 +5,8 @@ export interface IFileConversion extends Document {
   fileName: string;
   mode: 'encode' | 'decode';
   timestamp: Date;
+  downloaded: boolean;
+  downloadedAt?: Date;
 }
 
 const FileConversionSchema: Schema = new Schema({
@@ -26,6 +28,14 @@ const FileConversionSchema: Schema = new Schema({
   timestamp: {
     type: Date,
     default: Date.now
+  },
+  downloaded: {
+    type: Boolean,
+    default: false
+  },
+  downloadedAt: {
+    type: Date,
+    required: false
   }
 });
 

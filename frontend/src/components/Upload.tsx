@@ -36,6 +36,17 @@ export default function UploadPage() {
     }
   };
 
+  const logDownload = async (fileName: string, mode: 'encode' | 'decode'): Promise<void> => {
+    try {
+      await api.post('/conversions/log-download', {
+        fileName,
+        mode
+      });
+    } catch (error) {
+      console.error('Error logging download:', error);
+    }
+  };
+
   const handleUpload = async (): Promise<void> => {
     if (!file) return;
 
@@ -191,6 +202,11 @@ export default function UploadPage() {
               download={mode === 'encode' 
                 ? `${file?.name || 'encoded'}.pgn`
                 : `${file?.name.replace('.pgn', '') || 'decoded'}`}
+              onClick={() => {
+                if (file) {
+                  logDownload(file.name, mode);
+                }
+              }}
               className="px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 hover:shadow-lg hover:shadow-green-500/50 transition-all duration-300 hover:scale-105 active:scale-95 mb-4"
             >
               Download {mode === 'encode' ? 'PGN' : 'Decoded'} File
