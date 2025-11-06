@@ -1,23 +1,51 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
+import connectDB from './config/db';
+import conversionRoutes from './routes/conversionRoutes';
 
 dotenv.config();
 
 const app = express();
-app.use(cors());
-app.use(express.json());
-
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI || '';
 
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch((err) => console.error('MongoDB connection error:', err));
+// Connect to MongoDB
+connectDB();
 
-app.get('/', (_, res) => {
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// CORS configuration
+const allowedOrigins = process.env.ALLOWED_FRONTEND_URLS?.split(',').map(url => url.trim()) || [];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
+// Routes
+app.use('/api/conversions', conversionRoutes);
+
+// Health check route
+app.get('/', (req: Request, res: Response) => {
   res.send('Backend running successfully.');
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.get('/api/health', (req: Request, res: Response) => {
+  res.json({ status: 'ok', message: 'Server is running' });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});

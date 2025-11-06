@@ -2,6 +2,7 @@ import { makeGambit } from '../utils/make_gambit'
 import { undoGambit } from '../utils/undo_gambit'
 import { useState } from 'react';
 import LoadingState from './LoadingState';
+import api from '../api';
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -24,6 +25,17 @@ export default function UploadPage() {
     }
   };
 
+  const logConversion = async (fileName: string, mode: 'encode' | 'decode'): Promise<void> => {
+    try {
+      await api.post('/conversions/log-conversion', {
+        fileName,
+        mode
+      });
+    } catch (error) {
+      console.error('Error logging conversion:', error);
+    }
+  };
+
   const handleUpload = async (): Promise<void> => {
     if (!file) return;
 
@@ -43,6 +55,9 @@ export default function UploadPage() {
         const blob: Blob = new Blob([result], { type: 'text/plain' });
         const url: string = URL.createObjectURL(blob);
         setDownloadUrl(url);
+        
+        // Log to backend after successful encoding
+        await logConversion(file.name, 'encode');
       } else {
         const result: ArrayBuffer = await undoGambit(arrayBuffer, (prog: number) => {
           setProgress(prog);
@@ -53,6 +68,9 @@ export default function UploadPage() {
         const blob: Blob = new Blob([result]);
         const url: string = URL.createObjectURL(blob);
         setDownloadUrl(url);
+        
+        // Log to backend after successful decoding
+        await logConversion(file.name, 'decode');
       }
       
       setProgress(100);
