@@ -12,6 +12,7 @@ export default function UploadPage() {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [mode, setMode] = useState<'encode' | 'decode'>('encode');
   const [imageLoaded, setImageLoaded] = useState<boolean>(false);
+  const [conversionId, setConversionId] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const selectedFile: File | undefined = e.target.files?.[0];
@@ -27,20 +28,26 @@ export default function UploadPage() {
 
   const logConversion = async (fileName: string, mode: 'encode' | 'decode'): Promise<void> => {
     try {
-      await api.post('/conversions/log-conversion', {
+      const response = await api.post('/conversions/log-conversion', {
         fileName,
         mode
       });
+      // Store the ID from the response
+      if (response.data?.data?._id) {
+        setConversionId(response.data.data._id);
+      }
     } catch (error) {
       console.error('Error logging conversion:', error);
     }
   };
 
-  const logDownload = async (fileName: string, mode: 'encode' | 'decode'): Promise<void> => {
+  // Update logDownload to send the ID
+  const logDownload = async (): Promise<void> => {
+    if (!conversionId) return;
+    
     try {
       await api.post('/conversions/log-download', {
-        fileName,
-        mode
+        id: conversionId
       });
     } catch (error) {
       console.error('Error logging download:', error);
@@ -204,7 +211,7 @@ export default function UploadPage() {
                 : `${file?.name.replace('.pgn', '') || 'decoded'}`}
               onClick={() => {
                 if (file) {
-                  logDownload(file.name, mode);
+                  logDownload();
                 }
               }}
               className="px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 hover:shadow-lg hover:shadow-green-500/50 transition-all duration-300 hover:scale-105 active:scale-95 mb-4"
