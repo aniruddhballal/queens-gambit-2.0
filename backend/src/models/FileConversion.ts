@@ -37,6 +37,8 @@ const FileConversionSchema: Schema = new Schema({
     type: Date,
     required: false
   }
+}, {
+  versionKey: false
 });
 
 // Index for faster queries
